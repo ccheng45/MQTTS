@@ -55,7 +55,7 @@ def mel_spectrogram(y, n_fft, num_mels, sampling_rate, hop_size, win_size, fmin,
 
     global mel_basis, hann_window
     if fmax not in mel_basis:
-        mel = librosa_mel_fn(sampling_rate, n_fft, num_mels, fmin, fmax)
+        mel = librosa_mel_fn(sr=sampling_rate, n_fft=n_fft, n_mels=num_mels, fmin=fmin, fmax=fmax)
         mel_basis[str(fmax)+'_'+str(y.device)] = torch.from_numpy(mel).float().to(y.device)
         hann_window[str(y.device)] = torch.hann_window(win_size).to(y.device)
 
@@ -63,7 +63,7 @@ def mel_spectrogram(y, n_fft, num_mels, sampling_rate, hop_size, win_size, fmin,
     y = y.squeeze(1)
 
     spec = torch.stft(y, n_fft, hop_length=hop_size, win_length=win_size, window=hann_window[str(y.device)],
-                      center=center, pad_mode='reflect', normalized=False, onesided=True)
+                      center=center, pad_mode='reflect', normalized=False, onesided=True, return_complex=False)
 
     spec = torch.sqrt(spec.pow(2).sum(-1)+(1e-9))
 
@@ -108,12 +108,14 @@ class MelDataset(torch.utils.data.Dataset):
         self.device = device
         self.fine_tuning = fine_tuning
         self.base_mels_path = base_mels_path
-        self.spkr_embedding = Inference("pyannote/embedding", window="whole")
+        self.spkr_embedding = Inference("pyannote/embedding", window="whole", use_auth_token='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')
 
     def __getitem__(self, index):
+        print("__getitem__", index)
         filename = self.audio_files[index]
         if self._cache_ref_count == 0:
             try:
+                print(filename)
                 audio, sampling_rate = load_wav(filename)
                 audio = audio / MAX_WAV_VALUE
                 if not self.fine_tuning:
@@ -130,13 +132,17 @@ class MelDataset(torch.utils.data.Dataset):
         else:
             audio = self.cached_wav
             self._cache_ref_count -= 1
-
+      
         audio = torch.FloatTensor(audio)
+        print("1", audio.shape)
         audio = audio.unsqueeze(0)
+        print("2", audio.shape)
         speaker_embedding = self.spkr_embedding({'waveform': audio, 'sample_rate': self.sampling_rate})
+        print("3", speaker_embedding.shape)
         speaker_embedding = torch.nn.functional.normalize(torch.FloatTensor(speaker_embedding), dim=0)
 
         if not self.fine_tuning:
+            print("not fine_tune")
             if self.split:
                 if audio.size(1) >= self.segment_size:
                     max_audio_start = audio.size(1) - self.segment_size

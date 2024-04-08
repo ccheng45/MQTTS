@@ -127,6 +127,7 @@ def train(rank, a, h):
         for i, batch in enumerate(train_loader):
             if rank == 0:
                 start_b = time.time()
+                # (mel.squeeze(), audio.squeeze(0), filename, mel_loss.squeeze(), speaker_embedding)
             x, y, _, y_mel, spkr = batch
             x = torch.autograd.Variable(x.to(device, non_blocking=True))
             y = torch.autograd.Variable(y.to(device, non_blocking=True))
