@@ -5,4 +5,7 @@ from pyannote.audio import Pipeline
 #     "pyannote/speaker-diarization-3.1",
 #     use_auth_token="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")
 
-spkr_embedding = Inference("pyannote/embedding", window="whole",)
+spkr_embedding = Inference(
+    "pyannote/embedding",
+    window="whole",
+)

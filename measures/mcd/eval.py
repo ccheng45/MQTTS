@@ -12,8 +12,9 @@ from scipy.spatial.distance import euclidean
 from fastdtw import fastdtw
 import multiprocessing
 
-datadir = '../samples/mcd_{...}'
+datadir = "../samples/mcd_{...}"
 njobs = 16
+
 
 def wav2mcep(wavfile, mcep_dim=23, mcep_alpha=0.42, n_fft=1024, n_shift=256):
     x, spr = sf.read(wavfile, dtype="int16")
@@ -22,15 +23,16 @@ def wav2mcep(wavfile, mcep_dim=23, mcep_alpha=0.42, n_fft=1024, n_shift=256):
     assert spr == 16000
     mcep = [
         pysptk.sptk.mcep(
-                        x[n_shift * i : n_shift * i + n_fft] * win,
-                        mcep_dim,
-                        mcep_alpha,
-                        eps=1e-8,
-                        etype=1,
+            x[n_shift * i : n_shift * i + n_fft] * win,
+            mcep_dim,
+            mcep_alpha,
+            eps=1e-8,
+            etype=1,
         )
-                for i in range(n_frame)
+        for i in range(n_frame)
     ]
     return np.stack(mcep)
+
 
 def run(d):
     mcds = []
@@ -45,19 +47,21 @@ def run(d):
         mcds.append(mcd)
     return mcds
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     total_mcd = []
-    with open('../dev_mcd.json', 'r') as f:
+    with open("../dev_mcd.json", "r") as f:
         data = json.load(f)
     gtwavs = [k for k, _ in data]
-    ttswavs = [f'{datadir}/sentence-{i+1}-1.wav' for i in range(len(gtwavs))]
+    ttswavs = [f"{datadir}/sentence-{i+1}-1.wav" for i in range(len(gtwavs))]
     data = list(zip(ttswavs, gtwavs))
 
     segment_size = int(len(data) / njobs + 1)
-    segmented_data = [data[i*segment_size: (i+1)*segment_size] for i in range(njobs)]
+    segmented_data = [
+        data[i * segment_size : (i + 1) * segment_size] for i in range(njobs)
+    ]
     with multiprocessing.Pool(njobs) as p:
         out = p.map(run, segmented_data)
     for a in out:
         total_mcd += a
-    print (np.mean(total_mcd), np.std(total_mcd))
-
+    print(np.mean(total_mcd), np.std(total_mcd))
