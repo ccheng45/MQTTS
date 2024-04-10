@@ -103,13 +103,16 @@ if __name__ == "__main__":
     phonemizer = Phonemizer.from_checkpoint(args.phonemizer_dict_path)
     with open(args.input_path, "r") as f:
         input_file = json.load(f)
+    print("step 1")
     model = Wav2TTS_infer(args)
     model.cuda()
     model.vocoder.generator.remove_weight_norm()
     model.vocoder.encoder.remove_weight_norm()
     model.eval()
+    print("step 2")
     i_wavs, i_phones, written = [], [], 0
     for i, (speaker_path, sentence) in enumerate(input_file):
+        print("sentence",sentence)
         if args.spkr_embedding_path:
             i_wavs.append(
                 os.path.join(
